@@ -1,5 +1,6 @@
 # docker-jira
 Docker image that embed Atlassian JIRA v8.2.2. 
+This repo is for thei mage [hakunacloud/jira](https://cloud.docker.com/u/hakunacloud/repository/docker/hakunacloud/jira)
 
 # Run
 To make data persistent, we need a database and 2 volumes (jira's datadir and PostgreSQL datadir). And a network to connect the db and jira.
