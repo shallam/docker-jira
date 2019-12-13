@@ -1,17 +1,41 @@
 # docker-jira
-Docker image that embed Atlassian JIRA v8.2.2. 
-This repo is for thei mage [hakunacloud/jira](https://cloud.docker.com/u/hakunacloud/repository/docker/hakunacloud/jira)
+Docker image for Atlassian JIRA with TLS/SSL support enabled
 
-# Run
-To make data persistent, we need a database and 2 volumes (jira's datadir and PostgreSQL datadir). And a network to connect the db and jira.
-```bash
-docker volume create jira_data
-docker volume create jira_install
-docker volume create jira_pg
-docker network create jira-net
+This repo contains the sources for this [HakunaCloud blog post](https://hakuna.cloud/blog/jira_self_hosted.html)  
+
+# Build
+To build this image, you must have a `PKCS12` certificate for SSL/TLS. You can get one for free from Let's Encrypt using [certbot](https://certbot.eff.org/):
+```
+certbot certonly --standalone -d jira.example.com 
+``` 
+
+Convert it in a PKCS12 archive format:
+```
+sudo openssl pkcs12  -export -out ./jira.example.com.p12 \
+                -in /etc/letsencrypt/live/jira.example.com/fullchain.pem \
+                -inkey /etc/letsencrypt/live/jira.example.com/privkey.pem \
+                -name jira
 ```
 
-Then, we can start the db
+Last step is to copy the `PKCS12` archive in the same path of this `Dockerfile`.
+
+Then build the image as usual:
+```
+docker build -t hakunacloud/jira .
+```
+ 
+# Run
+Atlassian JIRA requires a PostgreSQL database.  To make data persistent, we need 2 volumes to hold data for Jira datadir and PostgreSQL datadir. 
+
+We also need to create a 
+```bash
+docker network create jira-net
+
+docker volume create jira_data
+docker volume create jira_pg
+```
+
+Start a PostgreSQL database:
 ```bash
 # Start PostgreSQL
 docker run --name jira_pg \
@@ -24,29 +48,14 @@ docker run --name jira_pg \
 ```
 
 
-and jira server
+And jira server
 ```bash
 # Start Jira
-docker run --name jira -d  \
+docker run --name jira -it  \
     --network jira-net \
-    -v jira_data:/var/atlassian/application-data/jira \
-    -v jira_install:/opt/atlassian/jira \
-    -p 8080:8080 \
-    hakunacloud/jira:8.2.2-test
+    -v jira_data:/var/atlassian/application-data/jira \   
+    -p 8443:8443 \
+    hakunacloud/jira
 ```
 
-Open a browser to http://localhost:8080 and proceed with the configuration of JIRA 
-
-# TODO
-
-
-## General
-- [x] Start and configure jira. Stop the container. Start jira again. All the settings are still there
-- [ ] Try to checkpoint and restore manually using criu
-- [ ]  Create a script that run criu at startup and shutdown
-
-## Jira Image
-- Add a script that configure the hostname at startup (xmlstarlet)
-
-
-
+Open a browser to https://localhost:8443 and proceed with the configuration of JIRA 
